@@ -1,1 +1,1 @@
-{"name":"usage-band","version":"0.1.0","description":"Band under the chat: tokens per prompt, % of 5-hour and weekly limits, red at 80%+","types":"./types/index.d.ts","license":"MIT"}
+{"name":"usage-band","version":"0.2.0","description":"Band under the chat: tokens per prompt, % of 5-hour and weekly limits, red at 80%+","types":"./types/index.d.ts","license":"MIT"}
