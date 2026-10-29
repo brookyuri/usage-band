@@ -1,5 +1,5 @@
 import { atom, read, update } from 'claude-code'
-import type { Register, SessionRateLimit } from 'claude-code'
+import type { EngineInterface, Register, SessionRateLimit } from 'claude-code'
 
 import type { LastTurn, Limits } from '../types'
 
@@ -29,7 +29,22 @@ function hhmm(iso?: string): string {
   if (!iso) return ''
   const d = new Date(iso)
   if (isNaN(d.getTime())) return ''
-  return ` ↻${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+  return ` (resets ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')})`
+}
+
+let warned5 = false
+let warnedW = false
+
+async function warn($: EngineInterface): Promise<void> {
+  const l = await read($, limits)
+  if (l.fiveHour !== null && l.fiveHour >= RED && !warned5) {
+    warned5 = true
+    $.ui.toast(`5-hour limit at ${l.fiveHour}%`)
+  }
+  if (l.weekly !== null && l.weekly >= RED && !warnedW) {
+    warnedW = true
+    $.ui.toast(`Weekly limit at ${l.weekly}%`)
+  }
 }
 
 export const register: Register = on => {
@@ -60,6 +75,7 @@ export const register: Register = on => {
 
   on('session.measure', async ($, e, next) => {
     if (e.rateLimits.length) await update($, limits, () => toLimits(e.rateLimits))
+    await warn($)
     return next(e)
   })
 
@@ -82,11 +98,11 @@ export const register: Register = on => {
       <Box flexDirection="row" gap={2}>
         <Text dimColor>
           {t
-            ? `Промпт: ${fmt(t.total)} ток. (вх ${fmt(t.input)} · вых ${fmt(t.output)} · кэш ${fmt(t.cacheRead + t.cacheWrite)})`
-            : 'Промпт: —'}
+            ? `Last prompt: ${fmt(t.total)} tokens (in ${fmt(t.input)} · out ${fmt(t.output)} · cache ${fmt(t.cacheRead + t.cacheWrite)})`
+            : 'Last prompt: —'}
         </Text>
-        {pct('5ч', l.fiveHour, l.fiveHourResets)}
-        {pct('Неделя', l.weekly, l.weeklyResets)}
+        {pct('5h', l.fiveHour, l.fiveHourResets)}
+        {pct('Week', l.weekly, l.weeklyResets)}
       </Box>
     )
   })
